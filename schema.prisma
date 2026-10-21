@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum OrderStatus { PENDING PAID PROCESSING SHIPPED OUT_FOR_DELIVERY DELIVERED CANCELLED REFUNDED }
+enum PaymentStatus { INITIATED PENDING SUCCESS FAILED REFUNDED }
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  phone String?
+  createdAt DateTime @default(now())
+  addresses Address[]
+  orders Order[]
+  reviews Review[]
+  wishlists Wishlist[]
+}
+model Address {
+  id String @id @default(cuid())
+  userId String
+  label String?
+  recipient String
+  phone String
+  line1 String
+  line2 String?
+  city String
+  state String
+  postalCode String?
+  country String @default("Nigeria")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Category {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  description String?
+  imageUrl String?
+  products Product[]
+  createdAt DateTime @default(now())
+}
+model Product {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  description String @default("")
+  priceKobo Int
+  compareAtPriceKobo Int?
+  imageUrl String
+  images Json?
+  brand String?
+  sku String? @unique
+  stock Int @default(0)
+  featured Boolean @default(false)
+  active Boolean @default(true)
+  rating Float @default(0)
+  reviewCount Int @default(0)
+  categoryId String?
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+  reviews Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([categoryId, active])
+  @@index([featured, active])
+}
+model Cart {
+  id String @id @default(cuid())
+  userId String? @unique
+  guestToken String? @unique
+  items CartItem[]
+  updatedAt DateTime @updatedAt
+}
+model CartItem {
+  id String @id @default(cuid())
+  cartId String
+  productId String
+  quantity Int @default(1)
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  @@unique([cartId, productId])
+}
+model Order {
+  id String @id @default(cuid())
+  reference String @unique
+  userId String?
+  email String
+  status OrderStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(INITIATED)
+  subtotalKobo Int
+  deliveryKobo Int @default(0)
+  discountKobo Int @default(0)
+  totalKobo Int
+  currency String @default("NGN")
+  shippingAddress Json?
+  paystackReference String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+}
+model OrderItem {
+  id String @id @default(cuid())
+  orderId String
+  productId String
+  productName String
+  unitPriceKobo Int
+  quantity Int
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+model Coupon {
+  id String @id @default(cuid())
+  code String @unique
+  percentOff Int?
+  amountOffKobo Int?
+  minimumOrderKobo Int @default(0)
+  usageLimit Int?
+  usedCount Int @default(0)
+  expiresAt DateTime?
+  active Boolean @default(true)
+}
+model Review {
+  id String @id @default(cuid())
+  userId String
+  productId String
+  rating Int
+  title String?
+  body String
+  verifiedPurchase Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+model Wishlist {
+  id String @id @default(cuid())
+  userId String
+  productId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, productId])
+}
+model SupportTicket {
+  id String @id @default(cuid())
+  email String
+  subject String
+  message String
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+}
