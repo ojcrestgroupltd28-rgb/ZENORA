@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "../Global.css";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: "ZENORA — Shop Smart. Live Golden.",
